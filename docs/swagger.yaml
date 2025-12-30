@@ -1,0 +1,106 @@
+basePath: /
+definitions:
+  profile.ErrorResponse:
+    properties:
+      error:
+        example: Invalid request
+        type: string
+      message:
+        example: The provided data is invalid
+        type: string
+    type: object
+  profile.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      organization_id:
+        type: string
+      role:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@hostflow.com
+    name: API Support
+    url: http://www.example.com/support
+  description: This is a comprehensive profile service API for managing users and
+    organizations.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Hostflow Profile Service API
+  version: "1.0"
+paths:
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Returns a list of all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/profile.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/profile.ErrorResponse'
+      summary: Get all users
+      tags:
+      - users
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Returns a single user by UUID
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/profile.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/profile.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/profile.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/profile.ErrorResponse'
+      summary: Get a user by ID
+      tags:
+      - users
+schemes:
+- http
+- https
+swagger: "2.0"
+tags:
+- description: Operations related to users
+  name: users
