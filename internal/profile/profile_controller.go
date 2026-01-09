@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -107,6 +108,51 @@ func (c *ProfileController) GetUsersHandler(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, users)
+}
+
+func (c *ProfileController) DeactivateHandler(ctx *gin.Context) {
+	fmt.Println("Deactivate handler called")
+	targetID := ctx.Param("id")
+
+	// These values are set by your Auth Middleware from the Supabase JWT
+	adminID := ctx.GetString("user_id")
+	orgID := ctx.GetInt64("organization_id")
+	role := ctx.GetString("role")
+
+	err := c.service.DeactivateUser(ctx, targetID, adminID, orgID, role)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.Status(204)
+}
+
+func (c *ProfileController) GetOrgNameHandler(ctx *gin.Context) {
+	// 1. Get the organization_id that the Middleware extracted from the JWT
+	// Use ctx.Get() because it was stored there by c.Set("organization_id", value)
+	val, exists := ctx.Get("organization_id")
+
+	if !exists {
+		ctx.JSON(401, gin.H{"error": "Organization ID not found in session"})
+		return
+	}
+
+	// 2. Type-assert the value to int64
+	orgID, ok := val.(int64)
+	if !ok {
+		ctx.JSON(500, gin.H{"error": "Internal server error: ID format mismatch"})
+		return
+	}
+
+	// 3. Call your service using the ID from the token
+	name, err := c.service.GetOrganizationName(ctx, orgID)
+	if err != nil {
+		ctx.JSON(404, gin.H{"error": "Organization not found"})
+		return
+	}
+
+	ctx.JSON(200, gin.H{"name": name})
 }
 
 // GetUserByIDHandler godoc

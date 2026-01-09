@@ -65,6 +65,31 @@ func (r *ProfileRepository) GetUsers() ([]User, error) {
 	return users, nil
 }
 
+func (r *ProfileRepository) UpdateStatus(ctx context.Context, userID string, orgID int64, status string) error {
+	query := `UPDATE "profiles" SET status = $1 WHERE id = $2 AND organization_id = $3`
+
+	result, err := r.db.Exec(ctx, query, status, userID, orgID)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return errors.New("no user found or unauthorized")
+	}
+	return nil
+}
+
+func (r *ProfileRepository) GetNameByID(ctx context.Context, orgID int64) (string, error) {
+	var name string
+	query := `SELECT name FROM organization WHERE id = $1`
+
+	err := r.db.QueryRow(ctx, query, orgID).Scan(&name)
+	if err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
 func (r *ProfileRepository) GetUserByID(id uuid.UUID) (*User, error) {
 	query := `
         SELECT id, organization_id, name, role, email, status, created_at, updated_at

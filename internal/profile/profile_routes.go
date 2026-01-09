@@ -37,6 +37,13 @@ func (route ProfileRoutes) Setup() {
 	{
 		users.GET("", route.profileController.GetUsersHandler)
 		users.GET("/:id", route.profileController.GetUserByIDHandler)
+		users.PUT("/:id/status", route.profileController.DeactivateHandler)
+	}
+
+	organizations := route.router.Group("/organization")
+	organizations.Use(route.authMiddleware.Handler())
+	{
+		organizations.GET("/name", route.profileController.GetOrgNameHandler)
 	}
 
 	health := route.router.Group("/health")

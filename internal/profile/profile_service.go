@@ -88,3 +88,22 @@ func (s *ProfileService) CreateUser(u *User) (*User, error) {
 
 	return created, nil
 }
+
+func (s *ProfileService) DeactivateUser(ctx context.Context, targetID string, adminID string, orgID int64, adminRole string) error {
+	// 1. Authorization check
+	if adminRole != "OWNER" {
+		return errors.New("unauthorized: only owners can deactivate members")
+	}
+
+	// 2. Prevent self-deactivation (Safety)
+	if targetID == adminID {
+		return errors.New("cannot deactivate your own account")
+	}
+
+	// 3. Execute update
+	return s.repo.UpdateStatus(ctx, targetID, orgID, "INACTIVE")
+}
+
+func (s *ProfileService) GetOrganizationName(ctx context.Context, orgID int64) (string, error) {
+	return s.repo.GetNameByID(ctx, orgID)
+}
