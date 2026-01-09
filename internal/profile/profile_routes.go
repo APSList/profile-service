@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"hostflow/profile-service/internal/middlewares"
 	"hostflow/profile-service/pkg/lib"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -11,17 +12,20 @@ type ProfileRoutes struct {
 	logger            lib.Logger
 	router            *lib.Router
 	profileController *ProfileController
+	authMiddleware    middlewares.AuthMiddleware
 }
 
 func SetProfileRoutes(
 	logger lib.Logger,
 	router *lib.Router,
 	profileController *ProfileController,
+	authMiddleware middlewares.AuthMiddleware,
 ) ProfileRoutes {
 	return ProfileRoutes{
 		logger:            logger,
 		router:            router,
 		profileController: profileController,
+		authMiddleware:    authMiddleware,
 	}
 }
 
@@ -29,6 +33,7 @@ func (route ProfileRoutes) Setup() {
 	route.logger.Info("Setting up [PROFILE] routes.")
 
 	users := route.router.Group("/users")
+	users.Use(route.authMiddleware.Handler())
 	{
 		users.GET("", route.profileController.GetUsersHandler)
 		users.GET("/:id", route.profileController.GetUserByIDHandler)

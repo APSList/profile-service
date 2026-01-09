@@ -20,6 +20,30 @@ func GetProfileRepository(db *pgxpool.Pool) *ProfileRepository {
 	}
 }
 
+// GetUsersByOrganizationID returns all users belonging to a specific organization.
+func (r *ProfileRepository) GetUsersByOrganizationID(ctx context.Context, organizationId int64) ([]User, error) {
+	query := `
+        SELECT id, organization_id, full_name, role, email, status, created_at, updated_at
+        FROM "profiles"
+        WHERE organization_id = $1
+        ORDER BY created_at DESC
+    `
+
+	rows, err := r.db.Query(ctx, query, organizationId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	// pgx.CollectRows handles scanning the entire result set into a slice of structs
+	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[User])
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
 func (r *ProfileRepository) GetUsers() ([]User, error) {
 	query := `
         SELECT *

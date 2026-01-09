@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"context"
 	"errors"
 
 	"github.com/google/uuid"
@@ -22,6 +23,24 @@ func (s *ProfileService) GetUsers() ([]User, error) {
 	if err != nil {
 		return nil, err
 	}
+	return users, nil
+}
+
+// GetUsers returns all users belonging to the requester's organization.
+// It uses the organizationID extracted from the OIDC/JWT token.
+func (s *ProfileService) GetUsersProtected(ctx context.Context, organizationID int64) ([]User, error) {
+	// We call the specific repository method that filters by Org
+	users, err := s.repo.GetUsersByOrganizationID(ctx, organizationID)
+	if err != nil {
+		// You can add custom logging or error wrapping here
+		return nil, err
+	}
+
+	// Logic check: If no users are found, pgx returns an empty slice, not an error.
+	if users == nil {
+		return []User{}, nil
+	}
+
 	return users, nil
 }
 
@@ -52,7 +71,7 @@ func (s *ProfileService) GetUserByOrganizationID(orgID uuid.UUID) (*User, error)
 // CreateUser creates a new user
 func (s *ProfileService) CreateUser(u *User) (*User, error) {
 	// optional: basic validation
-	if u.OrganizationID == uuid.Nil {
+	if u.OrganizationID == 0 {
 		return nil, errors.New("organization ID is required")
 	}
 	if u.Email == "" {
