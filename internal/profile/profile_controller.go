@@ -9,15 +9,22 @@ import (
 )
 
 type ProfileController struct {
-	service *ProfileService
+	service Service
 }
 
-func GetProfileController(service *ProfileService) *ProfileController {
+func GetProfileController(service Service) *ProfileController {
 	return &ProfileController{
 		service: service,
 	}
 }
 
+// LivenessHandler godoc
+// @Summary Liveness probe
+// @Description Check if the service is alive
+// @Tags health
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /health/liveness [get]
 func (route ProfileRoutes) LivenessHandler(c *gin.Context) {
 	// If this handler runs, the process is alive
 	c.JSON(200, gin.H{
@@ -25,6 +32,13 @@ func (route ProfileRoutes) LivenessHandler(c *gin.Context) {
 	})
 }
 
+// ReadinessHandler godoc
+// @Summary Readiness probe
+// @Description Check if the service is ready to handle requests
+// @Tags health
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Router /health/readiness [get]
 func (route ProfileRoutes) ReadinessHandler(c *gin.Context) {
 	// Put real readiness checks here if you have them
 	// e.g. database ping, message broker connection, etc.
@@ -67,12 +81,13 @@ func (c *ProfileController) GetUsersHandler(ctx *gin.Context) {
 // @Summary Get organization users
 // @Description Returns a list of users belonging to the requester's organization. Requires OWNER role.
 // @Tags users
-// @Security BearerAuth
+// @Accept json
 // @Produce json
-// @Success 200 {array} profile.User
-// @Failure 401 {object} profile.ErrorResponse "Unauthorized"
-// @Failure 403 {object} profile.ErrorResponse "Forbidden - Owners only"
-// @Failure 500 {object} profile.ErrorResponse "Internal Server Error"
+// @Security ApiKeyAuth
+// @Success 200 {array} User
+// @Failure 401 {object} ErrorResponse
+// @Failure 403 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /users [get]
 func (c *ProfileController) GetUsersHandler(ctx *gin.Context) {
 	// 1. Extract claims set by your Auth Middleware
@@ -110,6 +125,16 @@ func (c *ProfileController) GetUsersHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, users)
 }
 
+// DeactivateHandler godoc
+// @Summary Deactivate a user
+// @Description Deactivates a user account within the organization. Requires OWNER role.
+// @Tags users
+// @Security ApiKeyAuth
+// @Param id path string true "User ID to deactivate"
+// @Success 204 "No Content"
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /users/{id}/deactivate [delete]
 func (c *ProfileController) DeactivateHandler(ctx *gin.Context) {
 	fmt.Println("Deactivate handler called")
 	targetID := ctx.Param("id")
@@ -128,6 +153,16 @@ func (c *ProfileController) DeactivateHandler(ctx *gin.Context) {
 	ctx.Status(204)
 }
 
+// GetOrgNameHandler godoc
+// @Summary Get organization name
+// @Description Returns the name of the organization associated with the current user's token
+// @Tags organization
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} map[string]string "Example: {"name": "My Org"}"
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /org/name [get]
 func (c *ProfileController) GetOrgNameHandler(ctx *gin.Context) {
 	// 1. Get the organization_id that the Middleware extracted from the JWT
 	// Use ctx.Get() because it was stored there by c.Set("organization_id", value)
@@ -157,15 +192,16 @@ func (c *ProfileController) GetOrgNameHandler(ctx *gin.Context) {
 
 // GetUserByIDHandler godoc
 // @Summary Get a user by ID
-// @Description Returns a single user by UUID
+// @Description Returns a single user's profile information by their UUID
 // @Tags users
 // @Accept json
 // @Produce json
+// @Security ApiKeyAuth
 // @Param id path string true "User ID (UUID)"
-// @Success 200 {object} profile.User
-// @Failure 400 {object} profile.ErrorResponse
-// @Failure 404 {object} profile.ErrorResponse
-// @Failure 500 {object} profile.ErrorResponse
+// @Success 200 {object} User
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
 // @Router /users/{id} [get]
 func (c *ProfileController) GetUserByIDHandler(ctx *gin.Context) {
 	idStr := ctx.Param("id")

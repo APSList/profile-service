@@ -24,9 +24,106 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/health/liveness": {
+            "get": {
+                "description": "Check if the service is alive",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Liveness probe",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/health/readiness": {
+            "get": {
+                "description": "Check if the service is ready to handle requests",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Readiness probe",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/org/name": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns the name of the organization associated with the current user's token",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organization"
+                ],
+                "summary": "Get organization name",
+                "responses": {
+                    "200": {
+                        "description": "Example: {\"name\": \"My Org\"}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users": {
             "get": {
-                "description": "Returns a list of all users",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a list of users belonging to the requester's organization. Requires OWNER role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -36,7 +133,7 @@ const docTemplate = `{
                 "tags": [
                     "users"
                 ],
-                "summary": "Get all users",
+                "summary": "Get organization users",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -45,6 +142,18 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/profile.User"
                             }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/profile.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/profile.ErrorResponse"
                         }
                     },
                     "500": {
@@ -58,7 +167,12 @@ const docTemplate = `{
         },
         "/users/{id}": {
             "get": {
-                "description": "Returns a single user by UUID",
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Returns a single user's profile information by their UUID",
                 "consumes": [
                     "application/json"
                 ],
@@ -105,6 +219,52 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{id}/deactivate": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Deactivates a user account within the organization. Requires OWNER role.",
+                "tags": [
+                    "users"
+                ],
+                "summary": "Deactivate a user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID to deactivate",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -137,7 +297,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "organization_id": {
-                    "type": "string"
+                    "type": "integer"
                 },
                 "role": {
                     "type": "string"
@@ -151,6 +311,13 @@ const docTemplate = `{
             }
         }
     },
+    "securityDefinitions": {
+        "ApiKeyAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
     "tags": [
         {
             "description": "Operations related to users",
@@ -162,9 +329,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "hostflow.software/booking",
 	BasePath:         "/",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{"https"},
 	Title:            "Hostflow Profile Service API",
 	Description:      "This is a comprehensive profile service API for managing users and organizations.",
 	InfoInstanceName: "swagger",

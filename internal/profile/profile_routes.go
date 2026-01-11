@@ -4,6 +4,8 @@ import (
 	"hostflow/profile-service/internal/middlewares"
 	"hostflow/profile-service/pkg/lib"
 
+	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -44,6 +46,11 @@ func (route ProfileRoutes) Setup() {
 	organizations.Use(route.authMiddleware.Handler())
 	{
 		organizations.GET("/name", route.profileController.GetOrgNameHandler)
+	}
+
+	metrics := route.router.Group("/metrics")
+	{
+		metrics.GET("", gin.WrapH(promhttp.Handler()))
 	}
 
 	health := route.router.Group("/health")

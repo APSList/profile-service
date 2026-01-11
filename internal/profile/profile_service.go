@@ -11,6 +11,13 @@ type ProfileService struct {
 	repo *ProfileRepository
 }
 
+type Service interface {
+	GetUsersProtected(ctx context.Context, orgID int64) ([]User, error)
+	DeactivateUser(ctx context.Context, targetID, adminID string, orgID int64, role string) error
+	GetOrganizationName(ctx context.Context, orgID int64) (string, error)
+	GetUserByID(id uuid.UUID) (*User, error)
+}
+
 func GetProfileService(repo *ProfileRepository) *ProfileService {
 	return &ProfileService{
 		repo: repo,

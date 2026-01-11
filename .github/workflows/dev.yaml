@@ -22,6 +22,10 @@ jobs:
         run: go mod download
 
       - name: Run tests
+        env:
+          DATABASE_URL: "testDB"
+          APP_HOST: "localhost"
+          APP_PORT: "8081"
         run: go test -v ./...
 
   build:

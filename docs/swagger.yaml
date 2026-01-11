@@ -20,7 +20,7 @@ definitions:
       name:
         type: string
       organization_id:
-        type: string
+        type: integer
       role:
         type: string
       status:
@@ -28,7 +28,7 @@ definitions:
       updated_at:
         type: string
     type: object
-host: localhost:8080
+host: hostflow.software/booking
 info:
   contact:
     email: support@hostflow.com
@@ -43,11 +43,72 @@ info:
   title: Hostflow Profile Service API
   version: "1.0"
 paths:
+  /health/liveness:
+    get:
+      description: Check if the service is alive
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Liveness probe
+      tags:
+      - health
+  /health/readiness:
+    get:
+      description: Check if the service is ready to handle requests
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Readiness probe
+      tags:
+      - health
+  /org/name:
+    get:
+      description: Returns the name of the organization associated with the current
+        user's token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'Example: {"name": "My Org"}'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get organization name
+      tags:
+      - organization
   /users:
     get:
       consumes:
       - application/json
-      description: Returns a list of all users
+      description: Returns a list of users belonging to the requester's organization.
+        Requires OWNER role.
       produces:
       - application/json
       responses:
@@ -57,18 +118,28 @@ paths:
             items:
               $ref: '#/definitions/profile.User'
             type: array
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/profile.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/profile.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/profile.ErrorResponse'
-      summary: Get all users
+      security:
+      - ApiKeyAuth: []
+      summary: Get organization users
       tags:
       - users
   /users/{id}:
     get:
       consumes:
       - application/json
-      description: Returns a single user by UUID
+      description: Returns a single user's profile information by their UUID
       parameters:
       - description: User ID (UUID)
         in: path
@@ -94,12 +165,48 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/profile.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
       summary: Get a user by ID
       tags:
       - users
+  /users/{id}/deactivate:
+    delete:
+      description: Deactivates a user account within the organization. Requires OWNER
+        role.
+      parameters:
+      - description: User ID to deactivate
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Deactivate a user
+      tags:
+      - users
 schemes:
-- http
 - https
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
 tags:
 - description: Operations related to users
